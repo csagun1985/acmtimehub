@@ -44,3 +44,9 @@ next-env.d.ts
 *.db
 *.db-journal
 /public/uploads
+
+# Cloudflare / OpenNext
+.open-next
+.wrangler
+.dev.vars
+!.dev.vars.example

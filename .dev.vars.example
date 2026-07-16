@@ -1,0 +1,6 @@
+NEXTJS_ENV=development
+# Set these in Cloudflare Workers → Settings → Variables and Secrets for production:
+# AUTH_SECRET=
+# AUTH_URL=https://timehub.acmgroup-apps.com
+# AUTH_TRUST_HOST=true
+# DATABASE_URL=
