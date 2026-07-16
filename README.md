@@ -1,6 +1,6 @@
-# SIL Leave App
+# acmtimehub
 
-Service Incentive Leave tracker for Annual Leave (AL), Sick Leave (SL), and Day in Lieu (DIL).
+TimeHub — timesheets and Service Incentive Leave (AL, SL, DIL) for ACM Recruitment.
 
 ## Quick start
 
