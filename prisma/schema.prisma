@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  /// Login email is `email`; optional personal contact email
+  personalEmail String?
+  phone        String?
+  birthDate    DateTime?
+  address      String?
+  startDate    DateTime
+  /// Contract / employment end (termination)
+  endDate      DateTime?
+  /// NSW | VIC | QLD | SA | WA | TAS | ACT | NT
+  state        String   @default("NSW")
+  /// STAFF | MANAGER | ADMIN
+  role         String   @default("STAFF")
+  /// PROBATION | PERMANENT | CASUAL
+  employmentStatus String @default("PROBATION")
+  /// When set, AL/SL can be used on/after this date (even if still on probation)
+  probationEndDate DateTime?
+  /// FULL_TIME (8h/day, 40h/week) | PART_TIME (4h/day, 20h/week)
+  employmentType String @default("FULL_TIME")
+  /// Leave / PH entitlements (Casual defaults all false)
+  entitleAlAccrual     Boolean @default(true)
+  entitleSlAccrual     Boolean @default(true)
+  entitlePublicHoliday Boolean @default(true)
+  active       Boolean  @default(true)
+  /// Manager (or Admin) who approves this person's timesheets
+  timesheetApproverId String?
+  /// Manager (or Admin) who approves this person's SIL / leave requests
+  silApproverId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  timesheetApprover User?  @relation("TimesheetApprover", fields: [timesheetApproverId], references: [id], onDelete: SetNull)
+  silApprover       User?  @relation("SilApprover", fields: [silApproverId], references: [id], onDelete: SetNull)
+  timesheetReports  User[] @relation("TimesheetApprover")
+  silReports        User[] @relation("SilApprover")
+
+  leaveRequests   LeaveRequest[]
+  ledgerEntries   LeaveLedger[]
+  dilBuckets      DilBucket[]
+  auditLogs       AuditLog[]       @relation("AuditActor")
+  timesheetWeeks  TimesheetWeek[]
+}
+
+model LeaveRequest {
+  id              String    @id @default(cuid())
+  userId          String
+  /// AL | SL | DIL_CREDIT | DIL_USE
+  type            String
+  /// PENDING | APPROVED | REJECTED | CANCELLED
+  status          String    @default("PENDING")
+  startDate       DateTime
+  endDate         DateTime
+  /// Days for AL/SL (supports 0.5). Hours for DIL_CREDIT / DIL_USE.
+  amount          Float
+  isHalfDay       Boolean   @default(false)
+  reason          String?
+  notes           String?
+  medCertRequired Boolean   @default(false)
+  medCertPath     String?
+  rejectionReason String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([startDate, endDate])
+}
+
+model LeaveLedger {
+  id          String   @id @default(cuid())
+  userId      String
+  leaveType   String
+  /// OPENING | ACCRUAL | USAGE | ADJUSTMENT | FORFEIT | EXPIRY
+  kind        String
+  /// Positive = credit, negative = debit. Days for AL/SL.
+  amount      Float
+  fiscalYear  String
+  note        String?
+  requestId   String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, leaveType, fiscalYear])
+}
+
+model DilBucket {
+  id              String   @id @default(cuid())
+  userId          String
+  hours           Float
+  usedHours       Float    @default(0)
+  earnedDate      DateTime
+  expiresAt       DateTime
+  requestId       String?
+  timesheetWeekId String?
+  note            String?
+  createdAt       DateTime @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timesheetWeek TimesheetWeek? @relation(fields: [timesheetWeekId], references: [id], onDelete: SetNull)
+
+  @@index([userId, expiresAt])
+  @@index([timesheetWeekId])
+}
+
+model PublicHoliday {
+  id        String   @id @default(cuid())
+  date      DateTime
+  /// NSW | VIC
+  state     String
+  name      String
+  createdAt DateTime @default(now())
+
+  @@unique([date, state])
+  @@index([state, date])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  detail     String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+model TimesheetWeek {
+  id               String    @id @default(cuid())
+  userId           String
+  /// Monday 00:00 of the week (stored as date)
+  weekStart        DateTime
+  weekEnd          DateTime
+  /// DRAFT | SUBMITTED | APPROVED | REJECTED
+  status           String    @default("DRAFT")
+  isLate           Boolean   @default(false)
+  weekNote         String?
+  weekTotalHours   Float     @default(0)
+  dilHoursCredited Float     @default(0)
+  submittedAt      DateTime?
+  reviewedById     String?
+  reviewedAt       DateTime?
+  rejectionReason  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  days   TimesheetDay[]
+  dilBuckets DilBucket[]
+
+  @@unique([userId, weekStart])
+  @@index([status, weekStart])
+}
+
+model TimesheetDay {
+  id       String  @id @default(cuid())
+  weekId   String
+  /// Calendar date for this cell
+  date     DateTime
+  /// 0=Sun .. 6=Sat (JS getDay)
+  weekday  Int
+  hours    Float   @default(0)
+  isOff    Boolean @default(false)
+  note     String?
+
+  week TimesheetWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
+
+  @@unique([weekId, date])
+  @@index([weekId])
+}
