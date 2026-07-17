@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui";
 import { MedCertUploadForm } from "@/components/MedCertUploadForm";
+import { medCertServeUrl } from "@/lib/storage/med-certs";
 
 export default async function MedCertPage({
   params,
@@ -24,9 +25,10 @@ export default async function MedCertPage({
         <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6">
           <p className="text-sm">Certificate already uploaded.</p>
           <a
-            href={req.medCertPath}
+            href={medCertServeUrl(req.id)}
             className="mt-2 inline-block text-[var(--brand)]"
             target="_blank"
+            rel="noreferrer"
           >
             Open file
           </a>

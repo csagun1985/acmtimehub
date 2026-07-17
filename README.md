@@ -13,7 +13,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### Demo logins (password for all: `Password123!`)
+### Demo logins (local seed only; password for all: `Password123!`)
+
+Shown on `/login` only when `NODE_ENV=development` or `SHOW_DEMO_LOGINS=1`.
 
 | Email | Role |
 |---|---|
@@ -43,4 +45,8 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Stack
 
-Next.js · Prisma · SQLite · Auth.js (credentials) · Tailwind · date-holidays (AU-NSW / AU-VIC)
+Next.js · Prisma · SQLite (local) / Cloudflare D1 (Workers) · R2 med-cert uploads · Auth.js · Tailwind · OpenNext Cloudflare
+
+## Cloudflare deploy
+
+See **[DEPLOY-CLOUDFLARE.md](./DEPLOY-CLOUDFLARE.md)** for D1, R2, secrets, migrate, seed admin, and `npm run deploy`.

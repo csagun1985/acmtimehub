@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { saveMedCertPath } from "@/lib/actions";
+import {
+  medCertObjectKey,
+  medCertServeUrl,
+  putMedCertObject,
+} from "@/lib/storage/med-certs";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -36,16 +39,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const bytes = Buffer.from(await file.arrayBuffer());
+  const bytes = new Uint8Array(await file.arrayBuffer());
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const relDir = path.join("uploads", "med-certs", requestId);
-  const absDir = path.join(process.cwd(), "public", relDir);
-  await mkdir(absDir, { recursive: true });
-  const absPath = path.join(absDir, safeName);
-  await writeFile(absPath, bytes);
+  const key = medCertObjectKey(requestId, safeName);
+  const contentType = file.type || "application/octet-stream";
 
-  const publicPath = `/${relDir.replace(/\\/g, "/")}/${safeName}`;
-  await saveMedCertPath(requestId, publicPath);
+  await putMedCertObject(key, bytes, contentType);
+  // Store object key; UI links via authenticated /api/med-cert/[id]
+  await saveMedCertPath(requestId, key);
 
-  return NextResponse.json({ ok: true, path: publicPath });
+  return NextResponse.json({ ok: true, path: medCertServeUrl(requestId), key });
 }

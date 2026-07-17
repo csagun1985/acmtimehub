@@ -11,6 +11,9 @@ export default async function LoginPage({
   const session = await auth();
   if (session?.user) redirect("/timesheet");
   const params = await searchParams;
+  const showDemoLogins =
+    process.env.NODE_ENV === "development" ||
+    process.env.SHOW_DEMO_LOGINS === "1";
 
   async function loginAction(formData: FormData) {
     "use server";
@@ -57,7 +60,7 @@ export default async function LoginPage({
               name="email"
               required
               autoComplete="username"
-              defaultValue="staff.nsw@sil.local"
+              defaultValue={showDemoLogins ? "staff.nsw@sil.local" : undefined}
             />
           </Field>
           <Field label="Password">
@@ -67,7 +70,7 @@ export default async function LoginPage({
               name="password"
               required
               autoComplete="current-password"
-              defaultValue="Password123!"
+              defaultValue={showDemoLogins ? "Password123!" : undefined}
             />
           </Field>
           <Button type="submit" className="w-full">
@@ -75,15 +78,17 @@ export default async function LoginPage({
           </Button>
         </form>
 
-        <div className="mt-6 rounded-lg bg-[var(--bg)] p-3 text-xs text-[var(--muted)]">
-          <p className="font-medium text-[var(--ink)]">Demo accounts</p>
-          <ul className="mt-1 space-y-0.5">
-            <li>staff.nsw@sil.local / Password123!</li>
-            <li>staff.vic@sil.local / Password123!</li>
-            <li>manager@sil.local / Password123!</li>
-            <li>admin@sil.local / Password123!</li>
-          </ul>
-        </div>
+        {showDemoLogins ? (
+          <div className="mt-6 rounded-lg bg-[var(--bg)] p-3 text-xs text-[var(--muted)]">
+            <p className="font-medium text-[var(--ink)]">Demo accounts (local only)</p>
+            <ul className="mt-1 space-y-0.5">
+              <li>staff.nsw@sil.local / Password123!</li>
+              <li>staff.vic@sil.local / Password123!</li>
+              <li>manager@sil.local / Password123!</li>
+              <li>admin@sil.local / Password123!</li>
+            </ul>
+          </div>
+        ) : null}
       </div>
     </div>
   );

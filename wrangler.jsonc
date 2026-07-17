@@ -17,6 +17,20 @@
   "images": {
     "binding": "IMAGES"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "acmtimehub-db",
+      // Replace after: npx wrangler d1 create acmtimehub-db
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MED_CERTS",
+      "bucket_name": "acmtimehub-med-certs"
+    }
+  ],
   "observability": {
     "enabled": true
   }

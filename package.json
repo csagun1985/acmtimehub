@@ -15,6 +15,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
+    "db:d1-schema": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script",
     "postinstall": "prisma generate"
   },
   "prisma": {
@@ -22,6 +23,7 @@
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.1",
+    "@prisma/adapter-d1": "^5.22.0",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.4.0",
@@ -34,6 +36,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260717.1",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",

@@ -16,7 +16,7 @@ export function MedCertUploadForm({ requestId }: { requestId: string }) {
     const form = new FormData(e.currentTarget);
     form.set("requestId", requestId);
     const res = await fetch("/api/med-cert", { method: "POST", body: form });
-    const data = await res.json();
+    const data = (await res.json()) as { error?: string };
     setLoading(false);
     if (!res.ok) {
       setError(data.error || "Upload failed");

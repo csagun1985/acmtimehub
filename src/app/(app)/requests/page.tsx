@@ -39,6 +39,7 @@ export default async function RequestsPage() {
               <th className="px-4 py-3 font-medium">Dates</th>
               <th className="px-4 py-3 font-medium">Duration</th>
               <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Submitted</th>
               <th className="px-4 py-3 font-medium">Notes</th>
               <th className="px-4 py-3 font-medium" />
             </tr>
@@ -46,7 +47,7 @@ export default async function RequestsPage() {
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-[var(--muted)]">
+                <td colSpan={7} className="px-4 py-8 text-center text-[var(--muted)]">
                   No requests yet.
                 </td>
               </tr>
@@ -73,13 +74,17 @@ export default async function RequestsPage() {
                     ) : null}
                     {r.medCertPath ? (
                       <a
-                        href={r.medCertPath}
+                        href={`/api/med-cert/${r.id}`}
                         className="mt-1 block text-xs text-[var(--brand)]"
                         target="_blank"
+                        rel="noreferrer"
                       >
                         View cert
                       </a>
                     ) : null}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-[var(--muted)]">
+                    {format(r.createdAt, "dd MMM yyyy HH:mm")}
                   </td>
                   <td className="px-4 py-3 text-[var(--muted)]">
                     {r.reason || r.notes || "—"}
