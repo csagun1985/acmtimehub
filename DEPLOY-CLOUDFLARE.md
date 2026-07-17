@@ -13,16 +13,23 @@ Worker name: `acmtimehub` · Repo: https://github.com/csagun1985/acmtimehub
 
 ## One-time Cloudflare setup (boss checklist)
 
-### 1. Create D1 database
+### 1. D1 database
+
+`wrangler.jsonc` binds `DB` → database name `acmtimehub-db` and **omits** `database_id` so wrangler **4.45+** can auto-provision on deploy.
+
+Preferable one-time create (gives you a real UUID for dashboard / `d1 execute`):
 
 ```bash
 npx wrangler login
 npx wrangler d1 create acmtimehub-db
 ```
 
-Copy the printed `database_id` into `wrangler.jsonc` → `d1_databases[0].database_id` (replace `REPLACE_WITH_D1_DATABASE_ID`).
+Then either:
 
-Commit that change (or set the same id in the Cloudflare dashboard Worker → Settings → Bindings).
+- paste the printed UUID into `wrangler.jsonc` as `"database_id": "<uuid>"` and commit, **or**
+- set the same binding in the Cloudflare dashboard (Worker → Settings → Bindings)
+
+Never put a fake string like `REPLACE_WITH_...` in `database_id` — deploy fails with Cloudflare API **10021** (“must have a valid id”).
 
 ### 2. Create R2 bucket
 
@@ -30,11 +37,11 @@ Commit that change (or set the same id in the Cloudflare dashboard Worker → Se
 npx wrangler r2 bucket create acmtimehub-med-certs
 ```
 
-Binding `MED_CERTS` → bucket `acmtimehub-med-certs` is already declared in `wrangler.jsonc`.
+Binding `MED_CERTS` → bucket `acmtimehub-med-certs` is already declared in `wrangler.jsonc`. Wrangler may also auto-create the bucket on deploy if it does not exist.
 
-### 3. Apply schema to remote D1
+### 3. Apply schema to remote D1 (required before login works)
 
-Checked-in SQL matches the current Prisma schema (local SQLite may have been updated with `db push`, so do **not** rely only on the old Prisma migration folder for prod):
+Deploy creates an **empty** D1. Apply the checked-in SQL (matches current Prisma schema; do **not** rely only on old Prisma migration folders for prod):
 
 ```bash
 npx wrangler d1 execute acmtimehub-db --remote --file=./scripts/d1-schema.sql
@@ -46,29 +53,26 @@ To regenerate that file after schema changes:
 npm run db:d1-schema > scripts/d1-schema.sql
 ```
 
-### 4. Worker secrets
+### 4. Worker secrets (runtime)
 
-Set on the Worker (dashboard **Settings → Variables and Secrets**, or CLI):
+Set on the Worker (dashboard **Settings → Variables and Secrets**, or CLI) **before** relying on login:
 
 ```bash
 npx wrangler secret put AUTH_SECRET
 npx wrangler secret put AUTH_URL
-npx wrangler secret put AUTH_TRUST_HOST
 ```
 
-Suggested values:
-
-| Secret | Value |
-|---|---|
-| `AUTH_SECRET` | long random string (e.g. `openssl rand -base64 32`) |
-| `AUTH_URL` | public Worker URL, e.g. `https://acmtimehub.<account>.workers.dev` (or custom domain) |
-| `AUTH_TRUST_HOST` | `true` |
+| Secret | Required? | Value |
+|---|---|---|
+| `AUTH_SECRET` | **Yes** | long random string (e.g. `openssl rand -base64 32`). Without it Auth.js throws `MissingSecret` on sign-in. |
+| `AUTH_URL` | Recommended | public Worker URL, e.g. `https://acmtimehub.<account>.workers.dev` (or custom domain) |
+| `AUTH_TRUST_HOST` | Optional | App already sets `trustHost: true` in code; setting this secret is harmless but not required |
 
 Do **not** set `DATABASE_URL` on the Worker. Production Prisma uses the `DB` D1 binding.
 
 Optional: `SHOW_DEMO_LOGINS=1` only if you intentionally want demo accounts listed on `/login` (off by default in production builds).
 
-### 5. Seed one admin user
+### 5. Seed one admin user (required — empty DB cannot log in)
 
 Generate a bcrypt hash locally (Node, from repo root after `npm install`):
 
@@ -86,7 +90,16 @@ Or seed the full demo dataset against **local SQLite only**: `npm run db:seed` (
 
 ### 6. Build and deploy
 
-From the repo (Node 20+ recommended):
+**Cloudflare Workers Builds** (recommended for boss):
+
+| Step | Command |
+|---|---|
+| Build | `npm run build` (= `opennextjs-cloudflare build`) |
+| Deploy | `npx wrangler deploy` |
+
+After a successful build, `npx wrangler deploy` detects OpenNext and runs `opennextjs-cloudflare deploy` (cache populate + wrangler). That is OK — do **not** skip the OpenNext build; plain `wrangler deploy` without `.open-next/worker.js` fails.
+
+From a laptop (Node 20+):
 
 ```bash
 npm install
@@ -113,9 +126,9 @@ Scripts:
 ### 7. Dashboard checks after first deploy
 
 1. Workers & Pages → `acmtimehub` → **Bindings**: `DB`, `MED_CERTS`, `ASSETS`, etc.
-2. D1 → `acmtimehub-db` → confirm tables exist (`User`, `LeaveRequest`, …).
+2. D1 → `acmtimehub-db` → confirm tables exist (`User`, `LeaveRequest`, …). If empty, re-run step 3 schema SQL.
 3. R2 → `acmtimehub-med-certs` → empty until first med-cert upload.
-4. Open `/login`, sign in as the admin you seeded.
+4. Open `/login`, sign in as the admin you seeded in step 5. **No seed = login always fails** (invalid credentials), even if deploy succeeded.
 5. Upload a sick-leave med cert and open **View cert** (served from `/api/med-cert/<id>`, auth required — not a public R2 URL).
 
 ## Local development

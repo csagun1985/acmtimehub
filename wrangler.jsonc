@@ -20,9 +20,10 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "acmtimehub-db",
-      // Replace after: npx wrangler d1 create acmtimehub-db
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+      "database_name": "acmtimehub-db"
+      // Optional after create/deploy: add "database_id": "<uuid from wrangler d1 create|list>".
+      // Do NOT leave a fake placeholder — Cloudflare API rejects invalid ids (error 10021).
+      // Omitting database_id lets wrangler 4.45+ auto-provision D1 on deploy.
     }
   ],
   "r2_buckets": [
