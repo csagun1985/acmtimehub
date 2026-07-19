@@ -28,6 +28,18 @@ export default async function ReportsPage() {
     orderBy: { startDate: "desc" },
     take: 100,
   });
+  const leaveApproverIds = Array.from(
+    new Set(taken.map((r) => r.reviewedById).filter((id): id is string => Boolean(id)))
+  );
+  const leaveApprovers = leaveApproverIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: leaveApproverIds } },
+        select: { id: true, name: true, email: true },
+      })
+    : [];
+  const leaveApproverById = new Map(
+    leaveApprovers.map((a) => [a.id, a.name?.trim() ? a.name : a.email])
+  );
 
   const missingCert = await prisma.leaveRequest.findMany({
     where: {
@@ -103,6 +115,7 @@ export default async function ReportsPage() {
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Dates</th>
               <th className="px-4 py-3">Amount</th>
+              <th className="px-4 py-3">Leave/DIL Use Approver</th>
             </tr>
           </thead>
           <tbody>
@@ -118,6 +131,9 @@ export default async function ReportsPage() {
                 </td>
                 <td className="px-4 py-3 tabular-nums">
                   {r.type.startsWith("DIL") ? `${r.amount}h` : `${r.amount}d`}
+                </td>
+                <td className="px-4 py-3">
+                  {r.reviewedById ? leaveApproverById.get(r.reviewedById) ?? "—" : "—"}
                 </td>
               </tr>
             ))}

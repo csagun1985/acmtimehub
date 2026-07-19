@@ -20,6 +20,7 @@ function isLeavePath(pathname: string) {
     pathname.startsWith("/calendar") ||
     pathname.startsWith("/guidelines") ||
     pathname.startsWith("/profile") ||
+    pathname.startsWith("/history") ||
     pathname === "/manager" ||
     pathname.startsWith("/admin/people") ||
     pathname.startsWith("/admin/balances") ||
@@ -96,6 +97,12 @@ export function AppNav({ role }: { role: Role }) {
           >
             History
           </Link>
+          <Link
+            href="/history"
+            className={subLinkClass(pathname === "/history")}
+          >
+            Activity log
+          </Link>
           {(role === "MANAGER" || role === "ADMIN") && (
             <Link
               href="/manager/timesheets"
@@ -132,6 +139,12 @@ export function AppNav({ role }: { role: Role }) {
             )}
           >
             My requests
+          </Link>
+          <Link
+            href="/history"
+            className={subLinkClass(pathname.startsWith("/history"))}
+          >
+            History
           </Link>
           <Link
             href="/calendar"

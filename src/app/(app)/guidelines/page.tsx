@@ -95,6 +95,14 @@ const sections = [
     ],
   },
   {
+    title: "History and proof of submission",
+    body: [
+      "Open History to see an activity log of leave and timesheet submissions, approvals, and rejections, with date and time.",
+      "Staff see their own activity. Managers see activity for people they are assigned to approve. Admin sees the full log.",
+      "My requests also shows when each leave request was submitted. Timesheet history shows when each week was submitted.",
+    ],
+  },
+  {
     title: "How to request leave",
     body: [
       "Go to Request leave, choose the type, enter dates (and hours for DIL), and add a reason or notes as required.",

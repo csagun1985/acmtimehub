@@ -23,6 +23,18 @@ export default async function AdminTimesheetExportPage({
     include: { user: true, days: { orderBy: { date: "asc" } } },
     orderBy: [{ weekStart: "asc" }, { user: { name: "asc" } }],
   });
+  const approverIds = Array.from(
+    new Set(weeks.map((w) => w.reviewedById).filter((id): id is string => Boolean(id)))
+  );
+  const approvers = approverIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: approverIds } },
+        select: { id: true, name: true, email: true },
+      })
+    : [];
+  const approverById = new Map(
+    approvers.map((a) => [a.id, a.name?.trim() ? a.name : a.email])
+  );
 
   const header = [
     "WeekStart",
@@ -43,6 +55,7 @@ export default async function AdminTimesheetExportPage({
     "DilOtCredited",
     "Late",
     "ApprovedAt",
+    "Timesheet/OTCreditApprover",
     "WeekNote",
   ];
 
@@ -64,6 +77,7 @@ export default async function AdminTimesheetExportPage({
       w.dilHoursCredited,
       w.isLate ? "Y" : "N",
       w.reviewedAt ? format(w.reviewedAt, "yyyy-MM-dd HH:mm") : "",
+      w.reviewedById ? approverById.get(w.reviewedById) ?? "" : "",
       JSON.stringify(w.weekNote ?? ""),
     ].join(",");
   });
@@ -113,6 +127,7 @@ export default async function AdminTimesheetExportPage({
               <th className="px-4 py-3">Week</th>
               <th className="px-4 py-3">Total</th>
               <th className="px-4 py-3">DIL OT</th>
+              <th className="px-4 py-3">Approver</th>
             </tr>
           </thead>
           <tbody>
@@ -122,6 +137,9 @@ export default async function AdminTimesheetExportPage({
                 <td className="px-4 py-3">{formatWeekLabel(w.weekStart)}</td>
                 <td className="px-4 py-3 tabular-nums">{w.weekTotalHours}h</td>
                 <td className="px-4 py-3 tabular-nums">{w.dilHoursCredited}h</td>
+                <td className="px-4 py-3">
+                  {w.reviewedById ? approverById.get(w.reviewedById) ?? "—" : "—"}
+                </td>
               </tr>
             ))}
           </tbody>
