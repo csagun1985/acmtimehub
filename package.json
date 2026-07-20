@@ -23,6 +23,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.14.0",
     "@opennextjs/cloudflare": "^1.20.1",
     "@prisma/adapter-d1": "^6.19.3",
     "@prisma/adapter-libsql": "^6.19.3",

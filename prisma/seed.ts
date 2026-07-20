@@ -1,13 +1,9 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaLibSQL } from "@prisma/adapter-libsql";
 import bcrypt from "bcryptjs";
 import Holidays from "date-holidays";
 import { startOfDay, format } from "date-fns";
+import { createLocalPrismaClient } from "../src/lib/prisma-local";
 
-const url = process.env.DATABASE_URL ?? "file:./dev.db";
-const prisma = new PrismaClient({
-  adapter: new PrismaLibSQL({ url }),
-});
+const prisma = createLocalPrismaClient();
 
 async function seedHolidays(state: "NSW" | "VIC", years: number[]) {
   const region = state === "NSW" ? "AU-NSW" : "AU-VIC";

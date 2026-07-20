@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaD1 } from "@prisma/adapter-d1";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { cache } from "react";
+import { createLocalPrismaClient } from "./prisma-local";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
@@ -43,9 +44,6 @@ function shouldUseD1(): boolean {
 }
 
 function createSqliteClient(): PrismaClient {
-  // Loaded only for local SQLite; Workers always take the D1 path above.
-  const { createLocalPrismaClient } =
-    require("./prisma-local") as typeof import("./prisma-local");
   return createLocalPrismaClient();
 }
 
