@@ -156,3 +156,19 @@ npm run dev
 - OpenNext Cloudflare builds can be slow or flaky on some Windows setups; if `npm run deploy` fails oddly, retry or build from WSL/CI.
 - After changing Prisma schema, run `npx prisma generate` and refresh `scripts/d1-schema.sql` before applying to remote D1.
 - Never commit real secrets; keep `.env` / `.dev.vars` local only.
+
+## Worker bundle size (Cloudflare Free vs Paid)
+
+Cloudflare **Workers Free** allows a **3 MiB gzipped** Worker upload. **Workers Paid** ($5/mo) raises the limit to **10 MiB**.
+
+This app uses OpenNext + Next.js + Auth.js + Prisma, so the bundle is inherently large. To stay as small as possible:
+
+| Change | Why |
+|---|---|
+| `engineType = "client"` in `prisma/schema.prisma` | Rust-free Prisma (query compiler only). Avoids shipping postgres/mysql/sqlite query-engine `.wasm` files (~6 MiB raw). |
+| D1 via `@prisma/adapter-d1` on Workers | Production DB path; no unused database engines. |
+| Static AU public holidays (`src/lib/leave/au-public-holidays.ts`) | Keeps `date-holidays` out of the Worker bundle (dev/seed only). Regenerate: `npm run db:generate-holidays`. |
+
+If deploy still fails with error **10027** after these changes, the remaining OpenNext/Next/Auth stack may exceed **3 MiB gzip** — upgrade to **Workers Paid** for the 10 MiB limit.
+
+Build on Linux CI when possible (`npm run build` then `npx wrangler deploy`). Windows can hit `EPERM` removing `.open-next` (symlinks / OneDrive).

@@ -1,36 +1,20 @@
-import Holidays from "date-holidays";
 import { eachDayOfInterval, endOfDay, format, startOfDay } from "date-fns";
 import type { AuState } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
+import { AU_PUBLIC_HOLIDAYS } from "@/lib/leave/au-public-holidays";
 
-const STATE_REGION: Record<AuState, string> = {
-  NSW: "AU-NSW",
-  VIC: "AU-VIC",
-  QLD: "AU-QLD",
-  SA: "AU-SA",
-  WA: "AU-WA",
-  TAS: "AU-TAS",
-  ACT: "AU-ACT",
-  NT: "AU-NT",
-};
-
-function holidaySetFromLib(state: AuState, year: number): Map<string, string> {
-  const region = STATE_REGION[state];
-  if (!region) return new Map();
-  const hd = new Holidays(region);
-  const list = hd.getHolidays(year);
+function holidaySetFromStatic(state: AuState, year: number): Map<string, string> {
+  const entries = AU_PUBLIC_HOLIDAYS[state]?.[year] ?? [];
   const map = new Map<string, string>();
-  for (const h of list) {
-    if (h.type !== "public") continue;
-    const key = format(new Date(h.date), "yyyy-MM-dd");
-    map.set(key, h.name);
+  for (const h of entries) {
+    map.set(h.date, h.name);
   }
   return map;
 }
 
-/** Ensure public holidays for a state/year exist in DB (seed from date-holidays). */
+/** Ensure public holidays for a state/year exist in DB (from bundled AU holiday data). */
 export async function ensurePublicHolidays(state: AuState, year: number) {
-  const map = holidaySetFromLib(state, year);
+  const map = holidaySetFromStatic(state, year);
   for (const [dateKey, name] of map) {
     const date = startOfDay(new Date(dateKey + "T00:00:00"));
     await prisma.publicHoliday.upsert({

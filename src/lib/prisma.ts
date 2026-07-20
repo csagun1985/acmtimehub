@@ -5,11 +5,10 @@ import { cache } from "react";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-function createSqliteClient() {
-  return new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-  });
-}
+const clientLog =
+  process.env.NODE_ENV === "development"
+    ? (["error", "warn"] as const)
+    : (["error"] as const);
 
 /** Per-request D1 client (Workers must not reuse one client across requests). */
 const getD1Client = cache(() => {
@@ -17,7 +16,10 @@ const getD1Client = cache(() => {
   if (!env.DB) {
     throw new Error("D1 binding DB is not configured");
   }
-  return new PrismaClient({ adapter: new PrismaD1(env.DB) });
+  return new PrismaClient({
+    adapter: new PrismaD1(env.DB),
+    log: [...clientLog],
+  });
 });
 
 /**
@@ -38,6 +40,13 @@ function shouldUseD1(): boolean {
   } catch {
     return false;
   }
+}
+
+function createSqliteClient(): PrismaClient {
+  // Loaded only for local SQLite; Workers always take the D1 path above.
+  const { createLocalPrismaClient } =
+    require("./prisma-local") as typeof import("./prisma-local");
+  return createLocalPrismaClient();
 }
 
 export function getPrisma(): PrismaClient {
