@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/lib/auth";
 import { AuthError } from "next-auth";
+import { prisma } from "@/lib/prisma";
 import { Button, Field, inputClass } from "@/components/ui";
 
 export default async function LoginPage({
@@ -9,7 +10,13 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const session = await auth();
-  if (session?.user) redirect("/timesheet");
+  if (session?.user?.id) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, active: true },
+    });
+    if (dbUser?.active) redirect("/timesheet");
+  }
   const params = await searchParams;
   const showDemoLogins =
     process.env.NODE_ENV === "development" ||
